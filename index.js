@@ -26,7 +26,32 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        client.connect();
+        await client.connect();
+
+        const courseData = client.db('artistryMoth').collection('courses');
+        const usersData = client.db('artistryMoth').collection('users');
+
+        // users api
+        app.post('/users', async(req, res) => {
+            const user = req.body;
+            console.log(user)
+            const query = {email: user.email};
+            const existingUser = await usersData.findOne(query);
+            if(existingUser){
+                return res.send({message: 'User already exist'})
+            }
+            const result = await usersData.insertOne(user);
+            res.send(result)
+        })
+
+        // course apis
+        app.get('/courses', async (req, res) => {
+            const result = await courseData.find().sort({ price: 1 }).toArray()
+            res.send(result)
+        })
+
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
