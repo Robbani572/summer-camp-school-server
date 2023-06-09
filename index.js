@@ -32,6 +32,12 @@ async function run() {
         const usersData = client.db('artistryMoth').collection('users');
 
         // users api
+
+        app.get('/users', async(req, res) => {
+            const result = await usersData.find().toArray();
+            res.send(result)
+        })
+
         app.post('/users', async(req, res) => {
             const user = req.body;
             console.log(user)
