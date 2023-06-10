@@ -30,6 +30,7 @@ async function run() {
 
         const courseData = client.db('artistryMoth').collection('courses');
         const usersData = client.db('artistryMoth').collection('users');
+        const cartsData = client.db('artistryMoth').collection('carts');
 
         // users api
 
@@ -52,7 +53,26 @@ async function run() {
 
         // course apis
         app.get('/courses', async (req, res) => {
-            const result = await courseData.find().sort({ price: 1 }).toArray()
+            const result = await courseData.find().sort({ enrolledStudents: -1 }).toArray()
+            res.send(result)
+        })
+
+        // carts api
+
+        app.get('/carts', async(req, res) => {
+            const userEmail = req.query.email;
+            if(!userEmail){
+                return res.send([])
+            }
+            const query = {email: userEmail}
+            const result = await cartsData.find(query).toArray()
+            res.send(result)
+        })
+
+        app.post('/carts', async(req, res) => {
+            const item = req.body;
+            console.log(item)
+            const result = await cartsData.insertOne(item)
             res.send(result)
         })
 
