@@ -51,6 +51,26 @@ async function run() {
             res.send(result)
         })
 
+        app.patch('/users/:id', async(req, res) => {
+            const id = req.params.id
+            const filter = {_id: new ObjectId(id)}
+            const updateUser = req.body;
+            const updateDoc = {
+                $set: {
+                  role: updateUser.role
+                },
+              };
+            const result = await usersData.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+        app.delete('/users/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await usersData.deleteOne(query)
+            res.send(result)
+        })
+
         // course apis
         app.get('/courses', async (req, res) => {
             const result = await courseData.find().sort({ enrolledStudents: -1 }).toArray()
