@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { emit } = require('nodemon');
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 const app = express();
 require('dotenv').config()
@@ -88,7 +89,6 @@ async function run() {
 
         app.post('/users', async(req, res) => {
             const user = req.body;
-            console.log(user)
             const query = {email: user.email};
             const existingUser = await usersData.findOne(query);
             if(existingUser){
@@ -128,6 +128,7 @@ async function run() {
 
         app.get('/carts', jwtVerify, async(req, res) => {
             const userEmail = req.query.email;
+            console.log(userEmail)
             if(!userEmail){
                 return res.send([])
             }
@@ -142,17 +143,31 @@ async function run() {
 
         app.post('/carts', async(req, res) => {
             const item = req.body;
-            console.log(item)
             const result = await cartsData.insertOne(item)
             res.send(result)
         })
 
         app.delete('/carts/:id', async(req, res) => {
             const id = req.params.id;
-            console.log(id)
             const query = {_id: new ObjectId(id)}
             const result = await cartsData.deleteOne(query)
             res.send(result)
+        })
+
+        // payment method intent
+        app.post('/create-payment-intent', async(req, res) => {
+            const {price} = req.body;
+            const amount = price*100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    "card"
+                  ],
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
         })
 
 
