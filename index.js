@@ -189,10 +189,29 @@ async function run() {
         })
 
         // payment collection apis
+
+        app.get('/payments', jwtVerify, async (req, res) => {
+            const userEmail = req.query.email;
+            console.log(userEmail)
+            if (!userEmail) {
+                return res.send([])
+            }
+            const decodedEmail = req.decoded.email;
+            if (userEmail !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            const query = { user: userEmail }
+            const result = await paymentData.find(query).toArray()
+            res.send(result)
+        })
+
         app.post('/payments', jwtVerify, async(req, res) => {
             const payment = req.body;
-            const result = await paymentData.insertOne(payment)
-            res.send(result)
+            const insertResult = await paymentData.insertOne(payment)
+
+            const query = {_id: new ObjectId(payment.cartItem)}
+            const deleteResult = await cartsData.deleteOne(query)
+            res.send({insertResult, deleteResult})
         })
 
 
