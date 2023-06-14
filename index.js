@@ -15,13 +15,13 @@ app.use(cors())
 
 const jwtVerify = (req, res, next) => {
     const authorization = req.headers.authorization;
-    if(!authorization){
-        return res.status(401).send({error: true, message: 'unauthorized access'})
+    if (!authorization) {
+        return res.status(401).send({ error: true, message: 'unauthorized access' })
     }
     const token = authorization.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if(err){
-            return res.status(401).send({error: true, message: 'unauthorized access'})
+        if (err) {
+            return res.status(401).send({ error: true, message: 'unauthorized access' })
         }
         req.decoded = decoded;
         next();
@@ -52,22 +52,22 @@ async function run() {
         app.post('/jwt', (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.send({token})
+            res.send({ token })
         })
 
-        const verifyAdmin = async(req, res, next) => {
+        const verifyAdmin = async (req, res, next) => {
             const userEmail = req.decoded.email;
-            const query = {email: userEmail}
+            const query = { email: userEmail }
             const user = await usersData.findOne(query)
-            if(user?.role !== 'admin'){
-                return res.status(403).send({error: true, message: 'forbidden access'})
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
             }
             next()
         }
 
         // users api
 
-        app.get('/users', jwtVerify, verifyAdmin, async(req, res) => {
+        app.get('/users', jwtVerify, verifyAdmin, async (req, res) => {
             // const userEmail = req.query.email;
             // const decodedEmail = req.decoded.email;
             // if(userEmail !== decodedEmail){
@@ -77,43 +77,43 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/user', async(req, res) => {
+        app.get('/user', async (req, res) => {
             const userEmail = req.query.email;
-            if(!userEmail){
+            if (!userEmail) {
                 return res.send([])
             }
-            const filter = {email: userEmail}
+            const filter = { email: userEmail }
             const result = await usersData.findOne(filter)
             res.send(result)
         })
 
-        app.post('/users', async(req, res) => {
+        app.post('/users', async (req, res) => {
             const user = req.body;
-            const query = {email: user.email};
+            const query = { email: user.email };
             const existingUser = await usersData.findOne(query);
-            if(existingUser){
-                return res.send({message: 'User already exist'})
+            if (existingUser) {
+                return res.send({ message: 'User already exist' })
             }
             const result = await usersData.insertOne(user);
             res.send(result)
         })
 
-        app.patch('/users/:id', async(req, res) => {
+        app.patch('/users/:id', async (req, res) => {
             const id = req.params.id
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
             const updateUser = req.body;
             const updateDoc = {
                 $set: {
-                  role: updateUser.role
+                    role: updateUser.role
                 },
-              };
+            };
             const result = await usersData.updateOne(filter, updateDoc)
             res.send(result)
         })
 
-        app.delete('/users/:id', async(req, res) => {
+        app.delete('/users/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await usersData.deleteOne(query)
             res.send(result)
         })
@@ -124,46 +124,67 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/courses', async (req, res) => {
+            const course = req.body;
+            const result = await courseData.insertOne(course)
+            res.send(result)
+        })
+
         // carts api
 
-        app.get('/carts', jwtVerify, async(req, res) => {
+        app.get('/carts', jwtVerify, async (req, res) => {
             const userEmail = req.query.email;
             console.log(userEmail)
-            if(!userEmail){
+            if (!userEmail) {
                 return res.send([])
             }
             const decodedEmail = req.decoded.email;
-            if(userEmail !== decodedEmail){
-                return res.status(403).send({error: true, message: 'forbidden access'})
+            if (userEmail !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
             }
-            const query = {email: userEmail}
+            const query = { email: userEmail }
             const result = await cartsData.find(query).toArray()
             res.send(result)
         })
 
-        app.post('/carts', async(req, res) => {
+        app.get('/carts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await cartsData.findOne(query);
+            res.send(result)
+        })
+
+        app.post('/carts', async (req, res) => {
             const item = req.body;
             const result = await cartsData.insertOne(item)
             res.send(result)
         })
 
-        app.delete('/carts/:id', async(req, res) => {
+        app.delete('/carts/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await cartsData.deleteOne(query)
             res.send(result)
         })
 
         // payment method intent
-        app.post('/create-payment-intent', async(req, res) => {
-            const {price} = req.body;
-            const amount = price*100;
+        app.post('/create-payment-intent', jwtVerify, async (req, res) => {
+            // const userEmail = req.query.email;
+            // const decodedEmail = req.decoded.email;
+            // if(userEmail !== decodedEmail){
+            //     return res.status(403).send({error: true, message: 'forbidden access'})
+            // }
+            // const userEmail = req.decoded.email;
+            // const query = { email: userEmail }
+            // const user = await usersData.findOne(query)
+            const { price } = req.body;
+            const amount = price * 100;
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: "usd",
                 payment_method_types: [
                     "card"
-                  ],
+                ],
             })
             res.send({
                 clientSecret: paymentIntent.client_secret
