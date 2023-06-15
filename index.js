@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const { emit } = require('nodemon');
 require('dotenv').config()
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
@@ -44,7 +43,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const courseData = client.db('artistryMoth').collection('courses');
         const usersData = client.db('artistryMoth').collection('users');
@@ -137,8 +136,6 @@ async function run() {
             }
 
 
-            console.log(result)
-
             res.send({ result, insertInstructor, deleteInstructor })
         })
 
@@ -191,6 +188,7 @@ async function run() {
             };
             const filter = { _id: new ObjectId(id) }
             const result = await courseData.updateOne(filter, updateDoc)
+            res.send(result)
         })
 
         app.post('/courses', async (req, res) => {
@@ -246,7 +244,6 @@ async function run() {
         app.post('/create-payment-intent', jwtVerify, async (req, res) => {
             const { amount } = req.body;
             const price = parseFloat(amount);
-            console.log(price)
             const total = price * 100;
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: total,
@@ -302,7 +299,7 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
