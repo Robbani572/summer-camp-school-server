@@ -122,9 +122,33 @@ async function run() {
 
         // course apis
         app.get('/courses', async (req, res) => {
-
             const result = await courseData.find().sort({ enrolledStudents: -1 }).toArray()
             res.send(result)
+        })
+
+        app.patch('/courses/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const updateUser = req.body;
+            const updateDoc = {
+                $set: {
+                    status: updateUser.status
+                },
+            };
+            const result = await courseData.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+        app.put('/courses/:id', async(req, res) => {
+            const id = req.params.id;
+            const feedback = req.body;
+            const updateDoc = {
+                $set: {
+                    feedback: feedback
+                },
+            };
+            const filter = {_id: new ObjectId(id)}
+            const result = await courseData.updateOne(filter, updateDoc)
         })
 
         app.post('/courses', async (req, res) => {
@@ -137,7 +161,6 @@ async function run() {
 
         app.get('/carts', jwtVerify, async (req, res) => {
             const userEmail = req.query.email;
-            console.log(userEmail)
             if (!userEmail) {
                 return res.send([])
             }
@@ -192,7 +215,6 @@ async function run() {
 
         app.get('/payments', jwtVerify, async (req, res) => {
             const userEmail = req.query.email;
-            console.log(userEmail)
             if (!userEmail) {
                 return res.send([])
             }
@@ -208,10 +230,24 @@ async function run() {
         app.post('/payments', jwtVerify, async(req, res) => {
             const payment = req.body;
             const insertResult = await paymentData.insertOne(payment)
+            const filter = {_id: new ObjectId(payment.selectedCalss)}
+
+            const courseCollection = await courseData.findOne(filter)
+
+
+            const updateDoc = {
+                $set: {
+                    availableSeats: courseCollection.availableSeats - 1,
+                    enrolledStudents: courseCollection.enrolledStudents + 1,
+                },
+            };
+
+            
+            const updatedResult = await courseData.updateOne(filter, updateDoc)
 
             const query = {_id: new ObjectId(payment.cartItem)}
             const deleteResult = await cartsData.deleteOne(query)
-            res.send({insertResult, deleteResult})
+            res.send({insertResult, deleteResult, updatedResult})
         })
 
 
