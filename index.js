@@ -50,6 +50,7 @@ async function run() {
         const usersData = client.db('artistryMoth').collection('users');
         const cartsData = client.db('artistryMoth').collection('carts');
         const instructorData = client.db('artistryMoth').collection('instructor');
+        const feedbackData = client.db('artistryMoth').collection('feedback');
         const paymentData = client.db('artistryMoth').collection('payments');
 
         app.post('/jwt', (req, res) => {
@@ -197,6 +198,13 @@ async function run() {
             const result = await courseData.insertOne(course)
             res.send(result)
         })
+
+        // student feedback api
+        app.get('/feedback', async(req, res) => {
+            const result = await feedbackData.find().toArray()
+            res.send(result)
+        })
+
 
         // carts api
 
