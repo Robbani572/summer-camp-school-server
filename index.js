@@ -49,6 +49,7 @@ async function run() {
         const courseData = client.db('artistryMoth').collection('courses');
         const usersData = client.db('artistryMoth').collection('users');
         const cartsData = client.db('artistryMoth').collection('carts');
+        const instructorData = client.db('artistryMoth').collection('instructor');
         const paymentData = client.db('artistryMoth').collection('payments');
 
         app.post('/jwt', (req, res) => {
@@ -110,13 +111,53 @@ async function run() {
                 },
             };
             const result = await usersData.updateOne(filter, updateDoc)
-            res.send(result)
+
+            const updatedUser = await usersData.findOne(filter)
+            const instructorUpdated = {
+                instructorId: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                img: updatedUser.img
+            }
+
+            let insertInstructor = {};
+            let deleteInstructor;
+
+            if (updatedUser.role === 'instructor') {
+                insertInstructor = await instructorData.insertOne(instructorUpdated)
+            }
+            // const instructorQuery = {role: updatedUser.role}
+
+            const deleteQuery = { instructorId: updatedUser._id }
+
+            if (updatedUser.role === 'admin') {
+                deleteInstructor = await instructorData?.deleteOne(deleteQuery)
+            }
+
+
+            console.log(result)
+
+            res.send({ result, insertInstructor, deleteInstructor })
         })
 
         app.delete('/users/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await usersData.deleteOne(query)
+            res.send(result)
+        })
+
+        // instructor api
+        app.get('/instructors', async(req, res) => {
+            const result = await instructorData.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/instructors/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await instructorData.findOne(query)
             res.send(result)
         })
 
@@ -139,7 +180,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/courses/:id', async(req, res) => {
+        app.put('/courses/:id', async (req, res) => {
             const id = req.params.id;
             const feedback = req.body;
             const updateDoc = {
@@ -147,7 +188,7 @@ async function run() {
                     feedback: feedback
                 },
             };
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
             const result = await courseData.updateOne(filter, updateDoc)
         })
 
@@ -227,10 +268,10 @@ async function run() {
             res.send(result)
         })
 
-        app.post('/payments', jwtVerify, async(req, res) => {
+        app.post('/payments', jwtVerify, async (req, res) => {
             const payment = req.body;
             const insertResult = await paymentData.insertOne(payment)
-            const filter = {_id: new ObjectId(payment.selectedCalss)}
+            const filter = { _id: new ObjectId(payment.selectedCalss) }
 
             const courseCollection = await courseData.findOne(filter)
 
@@ -242,12 +283,12 @@ async function run() {
                 },
             };
 
-            
+
             const updatedResult = await courseData.updateOne(filter, updateDoc)
 
-            const query = {_id: new ObjectId(payment.cartItem)}
+            const query = { _id: new ObjectId(payment.cartItem) }
             const deleteResult = await cartsData.deleteOne(query)
-            res.send({insertResult, deleteResult, updatedResult})
+            res.send({ insertResult, deleteResult, updatedResult })
         })
 
 
