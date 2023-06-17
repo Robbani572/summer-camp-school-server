@@ -205,7 +205,6 @@ async function run() {
 
 
         // carts api
-
         app.get('/carts', jwtVerify, async (req, res) => {
             const userEmail = req.query.email;
             if (!userEmail) {
